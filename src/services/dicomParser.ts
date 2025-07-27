@@ -1,28 +1,41 @@
 import * as fs from 'fs';
+
 const dcmjs = require('dcmjs');
 
 
+function parseArrayValue(value: any): string {
+    let displayValue: string;
+    // 配列の場合
+    if (value.length === 1) {
+        displayValue = value[0];
+    } else {
+        displayValue = value.join(', ');
+    }
+    return displayValue;}
+
+
+function parseObjectValue(value: any): string {
+    // オブジェクトの場合（Sequence等）
+    return '[Complex Data]';
+}
+
 function getDisplayValue(value: any): string {
     // タグの情報を整理
-    let displayValue;
+    let displayValue = value;
     
     if (Array.isArray(value)) {
-        // 配列の場合
-        if (value.length === 1) {
-            displayValue = value[0];
-        } else {
-            displayValue = value.join(', ');
-        }
+        displayValue = parseArrayValue(value);
     } else if (typeof value === 'object' && value !== null) {
         // オブジェクトの場合（Sequence等）
-        displayValue = '[Complex Data]';
+        displayValue = parseObjectValue(value);
     } else {
-        displayValue = value;
+        console.error(`Unexpected value type: ${typeof value} for value:`, value);
+        throw new Error(`Unexpected value type: ${typeof value}`);        
     }
     return displayValue;
 }
 
-function createTagEntry(key: string, value: any): { value: string, rawValue: any } {
+function createTagEntry(value: any): { value: string, rawValue: any } {
     try {
         const displayValue = getDisplayValue(value);
         return {
@@ -56,7 +69,7 @@ export function parseDicomTags(filePath: string): Record<string, any> {
         
         // datasetからすべてのタグを取得
         for (const [key, value] of Object.entries(dataset)) {
-            tags[key] = createTagEntry(key, value);
+            tags[key] = createTagEntry(value);
         }
         
         return tags;
