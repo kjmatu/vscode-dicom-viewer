@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-const dicomParser = require('dicom-parser');
+const dcmjs = require('dcmjs');
 
 /**
  * DICOMファイルのタグ情報を辞書形式で返す関数
@@ -11,17 +11,46 @@ export function parseDicomTags(filePath: string): Record<string, any> {
         // ファイルを読み込んでBufferに変換
         const buffer = fs.readFileSync(filePath);
         
-        // dicom-parserでパース
-        const dataSet = dicomParser.parseDicom(buffer);
+        // dcmjsでパース
+        const dicomData = dcmjs.data.DicomMessage.readFile(buffer.buffer);
+        const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomData.dict);
         
-        // タグ情報をオブジェクト（辞書）として返す
-        const tags: Record<string, any> = {
-            patientID: dataSet.string('x00100020') || '',
-            patientName: dataSet.string('x00100010') || '',
-            studyDate: dataSet.string('x00080020') || '',
-            modality: dataSet.string('x00080060') || '',
-            studyDescription: dataSet.string('x00081030') || '',
-        };
+        // すべてのタグ情報を取得
+        const tags: Record<string, any> = {};
+        
+        // datasetからすべてのタグを取得
+        for (const [key, value] of Object.entries(dataset)) {
+            try {
+                // タグの情報を整理
+                let displayValue;
+                
+                if (Array.isArray(value)) {
+                    // 配列の場合
+                    if (value.length === 1) {
+                        displayValue = value[0];
+                    } else {
+                        displayValue = value.join(', ');
+                    }
+                } else if (typeof value === 'object' && value !== null) {
+                    // オブジェクトの場合（Sequence等）
+                    displayValue = '[Complex Data]';
+                } else {
+                    displayValue = value;
+                }
+                
+                tags[key] = {
+                    value: displayValue,
+                    rawValue: value
+                };
+                
+            } catch (error) {
+                // エラーが発生した場合はスキップ
+                tags[key] = {
+                    value: '[Parse Error]',
+                    rawValue: null
+                };
+            }
+        }
         
         return tags;
     } catch (error) {
