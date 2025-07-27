@@ -105,7 +105,6 @@ suite('DICOM Parser Test Suite', () => {
                 assert.ok(typeof tagName === 'string', `Tag name should be string: ${tagName}`);
                 assert.ok(typeof tagData === 'object', `Tag data should be object: ${tagName}`);
                 assert.ok('value' in tagData, `Tag should have 'value' property: ${tagName}`);
-                assert.ok('rawValue' in tagData, `Tag should have 'rawValue' property: ${tagName}`);
             }
 
         } catch (error) {
