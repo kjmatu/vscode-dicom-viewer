@@ -47,6 +47,6 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "dicom-parser": "^1.8.21"
+    "dcmjs": "^0.43.1"
   }
 }
