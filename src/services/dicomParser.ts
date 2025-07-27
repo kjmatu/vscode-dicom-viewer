@@ -40,7 +40,35 @@ function getDisplayValue(value: any): string {
     } else if (typeof value === 'object' && value !== null) {
         // オブジェクトの場合（Sequence等）
         displayValue = parseObjectValue(value);
-    } else {
+    } else if (typeof value === 'string' || typeof value === 'number') {
+        // 文字列や数値の場合はそのまま使用
+        displayValue = String(value);
+    } else if (typeof value === 'boolean') {
+        // 真偽値の場合は文字列に変換
+        displayValue = value ? 'true' : 'false';
+    } else if (value === null || value === undefined) {
+        // nullやundefinedの場合は空文字列に変換
+        displayValue = 'null or undefined';
+    } else if (Buffer.isBuffer(value)) {
+        // Bufferの場合はバイナリデータを16進数文字列に変換
+        displayValue = value.toString('hex');
+    } else if (typeof value === 'bigint') {
+        // BigIntの場合は文字列に変換
+        displayValue = value.toString();
+    } else if (typeof value === 'symbol') {
+        // シンボルの場合は文字列に変換
+        displayValue = value.toString();
+    } else if (value instanceof Date) {
+        // Dateオブジェクトの場合はISO文字列に変換
+        displayValue = value.toISOString();
+    } else if (value instanceof RegExp) {
+        // 正規表現の場合は文字列に変換
+        displayValue = value.toString();
+    } else if (value instanceof Error) {
+        // エラーオブジェクトの場合はメッセージを取得
+        displayValue = value.message || 'Error';
+    }
+    else {
         console.error(`Unexpected value type: ${typeof value} for value:`, value);
         throw new Error(`Unexpected value type: ${typeof value}`);
     }
