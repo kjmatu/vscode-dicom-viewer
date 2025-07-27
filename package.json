@@ -14,8 +14,9 @@
   "contributes": {
     "commands": [
       {
-        "command": "vscode-dicom-viewer.helloWorld",
-        "title": "Hello World"
+        "command": "vscode-dicom-viewer.parseDicomTags",
+        "title": "DICOM: Parse Tags",
+        "category": "DICOM Viewer"
       }
     ]
   },
