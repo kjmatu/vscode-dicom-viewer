@@ -16,8 +16,19 @@ function parseArrayValue(value: any): string {
 
 
 function parseObjectValue(value: any): string {
-    // オブジェクトの場合（Sequence等）
-    return '[Complex Data]';
+    try {
+        // JSON文字列として出力（読みやすく整形）
+        return JSON.stringify(value, null, 2);
+    } catch (error) {
+        // JSON変換できない場合（循環参照等）
+        try {
+            // toString()を試行
+            return String(value);
+        } catch {
+            // 最終手段
+            return '[Complex Data - Parse Error]';
+        }
+    }
 }
 
 function getDisplayValue(value: any): string {
