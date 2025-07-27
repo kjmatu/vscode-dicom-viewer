@@ -2,94 +2,6 @@ import * as fs from 'fs';
 
 const dcmjs = require('dcmjs');
 
-
-function parseArrayValue(value: any): string {
-    let displayValue: string;
-    // 配列の場合
-    if (value.length === 1) {
-        displayValue = value[0];
-    } else {
-        displayValue = value.join(', ');
-    }
-    return displayValue;
-}
-
-
-function parseObjectValue(value: any): string {
-    try {
-        // JSON文字列として出力（読みやすく整形）
-        return JSON.stringify(value, null, 2);
-    } catch (error) {
-        // JSON変換できない場合（循環参照等）
-        try {
-            // toString()を試行
-            return String(value);
-        } catch {
-            // 最終手段
-            return '[Complex Data - Parse Error]';
-        }
-    }
-}
-
-function getDisplayValue(value: any): string {
-    // タグの情報を整理
-    let displayValue = value;
-
-    if (Array.isArray(value)) {
-        displayValue = parseArrayValue(value);
-    } else if (typeof value === 'object' && value !== null) {
-        // オブジェクトの場合（Sequence等）
-        displayValue = parseObjectValue(value);
-    } else if (typeof value === 'string' || typeof value === 'number') {
-        // 文字列や数値の場合はそのまま使用
-        displayValue = String(value);
-    } else if (typeof value === 'boolean') {
-        // 真偽値の場合は文字列に変換
-        displayValue = value ? 'true' : 'false';
-    } else if (value === null || value === undefined) {
-        // nullやundefinedの場合は空文字列に変換
-        displayValue = 'null or undefined';
-    } else if (Buffer.isBuffer(value)) {
-        // Bufferの場合はバイナリデータを16進数文字列に変換
-        displayValue = value.toString('hex');
-    } else if (typeof value === 'bigint') {
-        // BigIntの場合は文字列に変換
-        displayValue = value.toString();
-    } else if (typeof value === 'symbol') {
-        // シンボルの場合は文字列に変換
-        displayValue = value.toString();
-    } else if (value instanceof Date) {
-        // Dateオブジェクトの場合はISO文字列に変換
-        displayValue = value.toISOString();
-    } else if (value instanceof RegExp) {
-        // 正規表現の場合は文字列に変換
-        displayValue = value.toString();
-    } else if (value instanceof Error) {
-        // エラーオブジェクトの場合はメッセージを取得
-        displayValue = value.message || 'Error';
-    }
-    else {
-        console.error(`Unexpected value type: ${typeof value} for value:`, value);
-        throw new Error(`Unexpected value type: ${typeof value}`);
-    }
-    return displayValue;
-}
-
-function createTagEntry(value: any): { value: string, rawValue: any } {
-    try {
-        const displayValue = getDisplayValue(value);
-        return {
-            value: displayValue,
-            rawValue: value
-        };
-    } catch (error) {
-        return {
-            value: '[Parse Error]',
-            rawValue: null
-        };
-    }
-}
-
 /**
 * DICOMファイルのタグ情報を辞書形式で返す関数
 * @param filePath DICOMファイルのパス
@@ -102,14 +14,23 @@ export function parseDicomTags(filePath: string): Record<string, any> {
 
         // dcmjsでパース
         const dicomData = dcmjs.data.DicomMessage.readFile(buffer.buffer);
-        const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomData.dict);
 
-        // すべてのタグ情報を取得
+        // 生データセット（タグ番号付き）
+        const rawDataset = dicomData.dict;
+
+        // 自然化されたデータセット（人間が読める名前）
+        const naturalizedDataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(rawDataset);
+
+        // すべてのタグ情報を取得（両方の形式で提供）
         const tags: Record<string, any> = {};
 
-        // datasetからすべてのタグを取得
-        for (const [key, value] of Object.entries(dataset)) {
-            tags[key] = createTagEntry(value);
+        // 自然化されたデータセットから取得（推奨）
+        for (const [tagName, value] of Object.entries(naturalizedDataset)) {
+
+            tags[tagName] = {
+                value: value,
+                type: typeof value,
+            };
         }
 
         return tags;
